@@ -10,6 +10,9 @@ public class PauseManager : MonoBehaviour {
 	
 	public AudioMixerSnapshot paused;
 	public AudioMixerSnapshot unpaused;
+
+    [SerializeField] GameObject m_PausePanel;
+    [SerializeField] SaveLoadPanel m_SavePanel;
 	
 	Canvas canvas;
 	
@@ -33,6 +36,13 @@ public class PauseManager : MonoBehaviour {
 		Lowpass ();
 		
 	}
+
+    public void OnClieckSaveLoad()
+    {
+        m_SavePanel.SetData(m_PausePanel);
+        //m_SavePanel.gameObject.SetActive(true);
+        m_PausePanel.gameObject.SetActive(false);
+    }
 	
 	void Lowpass()
 	{
