@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,7 +8,39 @@ public class SaveLoadPanel : MonoBehaviour
 
     [SerializeField] InputField m_Input;
     [SerializeField] GameObject m_SavePanel;
+    [SerializeField] GameObject m_ContentParent;
+    [SerializeField] GameObject m_SaveContentPrefab;
 
+    #region singleton stuff
+    private static SaveLoadPanel m_Instance;
+
+    public static SaveLoadPanel Instance
+    {
+        get { return m_Instance; }
+    }
+    #endregion
+
+    private void Awake()
+    {
+        m_Instance = this;
+    }
+
+    private void Start()
+    {
+        ListSaveFiles();
+    }
+
+    private void ListSaveFiles()
+    {
+        string[] files = Directory.GetFiles(SaveDataManager.GetSavePath());
+
+        foreach (var file in files)
+        {
+            GameObject saveContent = Instantiate(m_SaveContentPrefab);
+            saveContent.transform.SetParent(m_ContentParent.transform);
+            saveContent.GetComponent<LoadButton>().SetData(Path.GetFileName(file));
+        }
+    }
 
     public void SetData(GameObject pausePanel)
     {
@@ -46,8 +77,9 @@ public class SaveLoadPanel : MonoBehaviour
 
     
 
-    void Save(string name)
+    void Save(string saveName)
     {
+
         GameObject go = GameObject.FindWithTag("Player");
         if (go == null)
             Debug.LogError("NULL");
@@ -64,12 +96,19 @@ public class SaveLoadPanel : MonoBehaviour
         rotation[2] = go.transform.eulerAngles.z;
 
         MetaData metaData = new MetaData(go.GetComponent<CompleteProject.PlayerHealth>().currentHealth, position, rotation);
-        SaveDataManager.SaveData(metaData,name);
+        SaveDataManager.SaveData(metaData,saveName);
+
+        foreach (Transform child in m_ContentParent.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        ListSaveFiles();
     }
 
-    void LoadData()
+    public void LoadData(string saveName)
     {
-        MetaData data = SaveDataManager.LoadData();
+        MetaData data = SaveDataManager.LoadData(saveName);
         if (data != null)
         {
             GameObject go = GameObject.FindWithTag("Player");
