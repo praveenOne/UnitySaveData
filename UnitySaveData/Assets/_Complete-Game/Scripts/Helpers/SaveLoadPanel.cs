@@ -1,10 +1,15 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SaveLoadPanel : MonoBehaviour
 {
     GameObject m_PausePanel;
+
+    [SerializeField] InputField m_Input;
+    [SerializeField] GameObject m_SavePanel;
+
 
     public void SetData(GameObject pausePanel)
     {
@@ -19,7 +24,29 @@ public class SaveLoadPanel : MonoBehaviour
         this.gameObject.SetActive(false);
     }
 
+    public void OnclickCancelButton()
+    {
+        m_SavePanel.gameObject.SetActive(false);
+    }
+
+
+    public void SavePanelBringIn()
+    {
+        m_SavePanel.gameObject.SetActive(true);
+    }
+
     public void OnClickSaveButton()
+    {
+        if (!string.IsNullOrEmpty(m_Input.text))
+        {
+            Save(m_Input.text);
+            m_SavePanel.gameObject.SetActive(false);
+        }
+    }
+
+    
+
+    void Save(string name)
     {
         GameObject go = GameObject.FindWithTag("Player");
         if (go == null)
@@ -37,7 +64,7 @@ public class SaveLoadPanel : MonoBehaviour
         rotation[2] = go.transform.eulerAngles.z;
 
         MetaData metaData = new MetaData(go.GetComponent<CompleteProject.PlayerHealth>().currentHealth, position, rotation);
-        SaveDataManager.SaveData(metaData);
+        SaveDataManager.SaveData(metaData,name);
     }
 
     void LoadData()

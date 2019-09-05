@@ -5,12 +5,12 @@ using UnityEngine;
 public static class SaveDataManager
 {
 
-    public static void SaveData(MetaData data)
+    public static void SaveData(MetaData data, string name)
     {
         //Get a binary formatter
         BinaryFormatter binaryFormatter = new BinaryFormatter();
         //Create a file
-        FileStream fileStream = new FileStream(Application.persistentDataPath + "/PlayerData.dat",
+        FileStream fileStream = new FileStream(Application.persistentDataPath + "/" +name+".dat",
                                                 FileMode.Create, FileAccess.Write);
         //Save the scores
         binaryFormatter.Serialize(fileStream, data);
