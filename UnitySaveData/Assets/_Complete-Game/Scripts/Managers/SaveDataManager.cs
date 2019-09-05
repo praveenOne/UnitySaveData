@@ -5,13 +5,14 @@ using UnityEngine;
 public static class SaveDataManager
 {
     static string m_SavePath = Application.persistentDataPath +"/Saves/";
+    static string m_Extension = ".dat";
 
     public static void SaveData(MetaData data, string name)
     {
         //Get a binary formatter
         BinaryFormatter binaryFormatter = new BinaryFormatter();
         //Create a file
-        FileStream fileStream = new FileStream(m_SavePath + name+".dat",
+        FileStream fileStream = new FileStream(m_SavePath + name+ m_Extension,
                                                 FileMode.Create, FileAccess.Write);
         //Save the scores
         binaryFormatter.Serialize(fileStream, data);
@@ -42,5 +43,10 @@ public static class SaveDataManager
     {
         Directory.CreateDirectory(m_SavePath);
         return m_SavePath;
+    }
+
+    public static string GetExtension()
+    {
+        return m_Extension;
     }
 }

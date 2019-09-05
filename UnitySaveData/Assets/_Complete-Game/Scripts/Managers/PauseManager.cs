@@ -40,7 +40,6 @@ public class PauseManager : MonoBehaviour {
     public void OnClieckSaveLoad()
     {
         m_SavePanel.SetData(m_PausePanel);
-        //m_SavePanel.gameObject.SetActive(true);
         m_PausePanel.gameObject.SetActive(false);
     }
 	

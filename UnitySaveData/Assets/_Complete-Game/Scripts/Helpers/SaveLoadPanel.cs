@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +11,10 @@ public class SaveLoadPanel : MonoBehaviour
     [SerializeField] GameObject m_SavePanel;
     [SerializeField] GameObject m_ContentParent;
     [SerializeField] GameObject m_SaveContentPrefab;
+    [SerializeField] PauseManager m_PauseManager;
+    [SerializeField] Canvas m_MenuCanvas;
+    [SerializeField] Transform[] EnemyParent;
+    [SerializeField] GameObject[] Enemies;
 
     #region singleton stuff
     private static SaveLoadPanel m_Instance;
@@ -32,7 +37,7 @@ public class SaveLoadPanel : MonoBehaviour
 
     private void ListSaveFiles()
     {
-        string[] files = Directory.GetFiles(SaveDataManager.GetSavePath());
+        string[] files = Directory.GetFiles(SaveDataManager.GetSavePath(), "*"+SaveDataManager.GetExtension());
 
         foreach (var file in files)
         {
@@ -79,46 +84,106 @@ public class SaveLoadPanel : MonoBehaviour
 
     void Save(string saveName)
     {
-
-        GameObject go = GameObject.FindWithTag("Player");
-        if (go == null)
-            Debug.LogError("NULL");
-
-        float[] position = new float[3];
-        position[0] = go.transform.position.x;
-        position[1] = go.transform.position.y;
-        position[2] = go.transform.position.z;
-
-
-        float[] rotation = new float[3];
-        rotation[0] = go.transform.eulerAngles.x;
-        rotation[1] = go.transform.eulerAngles.y;
-        rotation[2] = go.transform.eulerAngles.z;
-
-        MetaData metaData = new MetaData(go.GetComponent<CompleteProject.PlayerHealth>().currentHealth, position, rotation);
+        MetaData metaData = new MetaData(GetCurrentPlayerData(), GetCurrentEnemyData(0), GetCurrentEnemyData(1), GetCurrentEnemyData(2));
         SaveDataManager.SaveData(metaData,saveName);
 
-        foreach (Transform child in m_ContentParent.transform)
-        {
-            Destroy(child.gameObject);
-        }
-
+        CleanData(m_ContentParent.transform);
         ListSaveFiles();
     }
+
+    MyCharacter GetCurrentPlayerData()
+    {
+        GameObject player = GameObject.FindWithTag("Player");
+
+        MyTransform playerPos = new MyTransform(player.transform.position.x,
+                    player.transform.position.y,
+                    player.transform.position.z);
+
+        MyTransform playerRotation = new MyTransform(player.transform.eulerAngles.x,
+                    player.transform.eulerAngles.y,
+                    player.transform.eulerAngles.z);
+
+        return new MyCharacter(player.GetComponent<CompleteProject.PlayerHealth>().currentHealth,
+                                playerPos, playerRotation);
+    }
+
+    MyCharacter[] GetCurrentEnemyData(int index)
+    {
+        List<MyCharacter> enemyList = new List<MyCharacter>();
+        Transform parent = EnemyParent[index];
+
+        foreach (Transform enemy in parent)
+        {
+            //position
+            MyTransform enemyPos        = new MyTransform(enemy.position.x, enemy.position.y, enemy.position.z);
+
+            //rotation
+            MyTransform enemyRotation   = new MyTransform(enemy.eulerAngles.x, enemy.eulerAngles.y, enemy.eulerAngles.z);
+
+            MyCharacter enemyCharacter  = new MyCharacter(enemy.gameObject.GetComponent<CompleteProject.EnemyHealth>().currentHealth,
+                                         enemyPos, enemyRotation);
+
+            enemyList.Add(enemyCharacter);
+
+        }
+
+        return enemyList.ToArray();
+    }
+
 
     public void LoadData(string saveName)
     {
         MetaData data = SaveDataManager.LoadData(saveName);
         if (data != null)
         {
-            GameObject go = GameObject.FindWithTag("Player");
+            LoadPlayerData(data.Player);
 
-            Vector3 pos = new Vector3(data.PlayerPosition[0], data.PlayerPosition[1], data.PlayerPosition[2]);
-            Vector3 rot = new Vector3(data.PlayerRotation[0], data.PlayerRotation[1], data.PlayerRotation[2]);
+            LoadEnemyData(data.ZomBunny, 0);
+            LoadEnemyData(data.ZomBear, 1);
+            LoadEnemyData(data.Helliphant, 2);
 
-            go.transform.position = pos;
-            go.GetComponent<CompleteProject.PlayerHealth>().currentHealth = data.PlayerHelth;
-            go.transform.rotation = Quaternion.Euler(rot.x, rot.y, rot.z);
+            m_PauseManager.Pause();
+            OnClieckBackButton();
+            m_MenuCanvas.enabled = false;
+        }
+    }
+
+
+    void LoadPlayerData(MyCharacter player)
+    {
+        GameObject thisPlayer = GameObject.FindWithTag("Player");
+
+        Vector3 pos = new Vector3(player.Position.X, player.Position.Y, player.Position.Z);
+
+        thisPlayer.transform.position = pos;
+        thisPlayer.GetComponent<CompleteProject.PlayerHealth>().currentHealth = player.Helth;
+        thisPlayer.transform.rotation = Quaternion.Euler(player.Rotation.X, player.Rotation.Y, player.Rotation.Z);
+    }
+
+    void LoadEnemyData(MyCharacter[] characterData, int enemyIndex)
+    {
+        Transform parent = EnemyParent[enemyIndex];
+
+        CleanData(parent);
+
+        foreach (var enemy in characterData)
+        {
+            GameObject thisEnemy = Instantiate(Enemies[enemyIndex]);
+            thisEnemy.transform.SetParent(parent);
+
+            Vector3 pos = new Vector3(enemy.Position.X, enemy.Position.Y, enemy.Position.Z);
+            thisEnemy.transform.position = pos;
+            thisEnemy.transform.rotation = Quaternion.Euler(enemy.Rotation.X, enemy.Rotation.Y, enemy.Rotation.Z);
+            thisEnemy.GetComponent<CompleteProject.EnemyHealth>().currentHealth = enemy.Helth;
+
+        }
+    }
+
+    void CleanData(Transform parent)
+    {
+        foreach (Transform child in parent)
+        {
+            Destroy(child.gameObject);
         }
     }
 }
