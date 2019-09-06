@@ -5,8 +5,11 @@ using UnityEngine.UI;
 
 public class SaveLoadPanel : MonoBehaviour
 {
+    #region member fields
     GameObject m_PausePanel;
+    #endregion
 
+    #region serialized fields
     [SerializeField] InputField m_Input;
     [SerializeField] GameObject m_SavePanel;
     [SerializeField] GameObject m_ContentParent;
@@ -15,6 +18,7 @@ public class SaveLoadPanel : MonoBehaviour
     [SerializeField] Canvas m_MenuCanvas;
     [SerializeField] Transform[] EnemyParent;
     [SerializeField] GameObject[] Enemies;
+    #endregion
 
     #region singleton stuff
     private static SaveLoadPanel m_Instance;
@@ -35,6 +39,9 @@ public class SaveLoadPanel : MonoBehaviour
         ListSaveFiles();
     }
 
+    /// <summary>
+    /// Creates Save file list
+    /// </summary>
     private void ListSaveFiles()
     {
         string[] files = Directory.GetFiles(SaveDataManager.GetSavePath(), "*"+SaveDataManager.GetExtension());
@@ -47,30 +54,46 @@ public class SaveLoadPanel : MonoBehaviour
         }
     }
 
+    #region Panel Specific Methods
+    /// <summary>
+    /// Initialized Save Load Panel
+    /// </summary>
+    /// <param name="pausePanel"></param>
     public void SetData(GameObject pausePanel)
     {
         gameObject.SetActive(true);
         m_PausePanel = pausePanel;
     }
 
-
+    /// <summary>
+    /// On Back Button Clieck
+    /// </summary>
     public void OnClieckBackButton()
     {
         m_PausePanel.gameObject.SetActive(true);
         this.gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// On Cancel Button Click
+    /// </summary>
     public void OnclickCancelButton()
     {
         m_SavePanel.gameObject.SetActive(false);
     }
 
-
+    /// <summary>
+    /// Bring In Save Panel
+    /// </summary>
     public void SavePanelBringIn()
     {
         m_SavePanel.gameObject.SetActive(true);
     }
 
+
+    /// <summary>
+    /// On Click Save Button on Save Panel
+    /// </summary>
     public void OnClickSaveButton()
     {
         if (!string.IsNullOrEmpty(m_Input.text))
@@ -79,18 +102,37 @@ public class SaveLoadPanel : MonoBehaviour
             m_SavePanel.gameObject.SetActive(false);
         }
     }
+    #endregion
 
-    
 
+    #region Save Data specific
+    /// <summary>
+    /// Save Data
+    /// </summary>
+    /// <param name="saveName"></param>
     void Save(string saveName)
     {
         MetaData metaData = new MetaData(GetCurrentPlayerData(), GetCurrentEnemyData(0), GetCurrentEnemyData(1), GetCurrentEnemyData(2));
-        SaveDataManager.SaveData(metaData,saveName);
+        SaveDataManager.SaveData(metaData,saveName,(bool obj) =>
+        { if (obj)
+            {
+                CleanData(m_ContentParent.transform);
+                ListSaveFiles();
 
-        CleanData(m_ContentParent.transform);
-        ListSaveFiles();
+            }
+            else
+            {
+                Debug.LogError("Unable to save the data");
+            }
+        });
+
+        
     }
 
+    /// <summary>
+    /// Collects Player data to save
+    /// </summary>
+    /// <returns></returns>
     MyCharacter GetCurrentPlayerData()
     {
         GameObject player = GameObject.FindWithTag("Player");
@@ -107,6 +149,11 @@ public class SaveLoadPanel : MonoBehaviour
                                 playerPos, playerRotation);
     }
 
+    /// <summary>
+    /// Collect Enemy Data to save
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns></returns>
     MyCharacter[] GetCurrentEnemyData(int index)
     {
         List<MyCharacter> enemyList = new List<MyCharacter>();
@@ -129,8 +176,14 @@ public class SaveLoadPanel : MonoBehaviour
 
         return enemyList.ToArray();
     }
+    #endregion
 
 
+    #region Load Data specific
+    /// <summary>
+    /// Get Saved data by save name
+    /// </summary>
+    /// <param name="saveName"></param>
     public void LoadData(string saveName)
     {
         MetaData data = SaveDataManager.LoadData(saveName);
@@ -148,7 +201,10 @@ public class SaveLoadPanel : MonoBehaviour
         }
     }
 
-
+    /// <summary>
+    /// Load Player Data
+    /// </summary>
+    /// <param name="player"></param>
     void LoadPlayerData(MyCharacter player)
     {
         GameObject thisPlayer = GameObject.FindWithTag("Player");
@@ -160,6 +216,11 @@ public class SaveLoadPanel : MonoBehaviour
         thisPlayer.transform.rotation = Quaternion.Euler(player.Rotation.X, player.Rotation.Y, player.Rotation.Z);
     }
 
+    /// <summary>
+    /// Load Enemy Data
+    /// </summary>
+    /// <param name="characterData"></param>
+    /// <param name="enemyIndex"></param>
     void LoadEnemyData(MyCharacter[] characterData, int enemyIndex)
     {
         Transform parent = EnemyParent[enemyIndex];
@@ -179,6 +240,13 @@ public class SaveLoadPanel : MonoBehaviour
         }
     }
 
+    #endregion
+
+
+    /// <summary>
+    /// Remove all children of specific parent
+    /// </summary>
+    /// <param name="parent"></param>
     void CleanData(Transform parent)
     {
         foreach (Transform child in parent)
